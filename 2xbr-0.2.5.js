@@ -154,72 +154,54 @@
 		/*Alias*/
  		var m = matrix;
  		var o = originalPixelView;
- 		var w = sourceWidth;
-		/** NOTE: Bounds Checker
-		 * The cordinates are multiplied by a bit result: if x OR y is negative
-		 * the cordinates are multiplied by -1, otherwise its multiplied by +1.
-		 * 
-		 * This keeps out-of-bound cordinates, out of bounds in the originalPixelView
-		 * resulting in a undefined value stored.
-		 * 
-		 * I chose this 'odd' method of bound checking for 3 reasons:
-		 *	1: I didn't realize, that when 'x' is negative and 'y' positive, the cordinate
-		 *	math I implemented gives a wrong index because 'y' ends up being subtracted by
-		 *	'x', and since each 'y' value is multiplied by the width of the image, a positive
-		 *	index is the result. I didn't want to re-write this whole thing..
-		 *	2: I didn't want to add individual if...else statement to check the boundries
-		 *	and at that point, any other similer check seemed..dirty to me. 
-		 *	3: Speed. Since this function is called constantly by a for loop, i didn't want 
-		 *	a boundry check on every call, this little 'bug' only comes out when
-		 *	'x' or 'y' is at the edge of the image.
-		 *
-		 * Take matrix[0] for example:
-		 * abs( (w * (y-2) ) + (x-1) ) * ((x-1>>31) | 0x00000001)|((y-2>>31) | 0x00000001)
-		 *
-		 * This is the 'x,y coordinate to index' conversion:
-		 * abs( (w * (y-2) ) + (x-1) )
-		 *
-		 * And it's multiplied by the bit boundry check:
-		 * ((x-1>>31) | 0x00000001)  |  ((y-2>>31) | 0x00000001)
-		 *
-		 * It's not so bad :3
-		 **/
-		m[ 0] = o[ abs( (w * (y-2) ) + (x-1) ) * (  ((x-1>>31) | 0x00000001)|((y-2>>31) | 0x00000001)  ) ];
-		m[ 1] = o[ abs( (w * (y-2) ) + ( x ) ) * (  ((  x>>31) | 0x00000001)|((y-2>>31) | 0x00000001)  ) ];
-		m[ 2] = o[ abs( (w * (y-2) ) + (x+1) ) * (  ((x+1>>31) | 0x00000001)|((y-2>>31) | 0x00000001)  ) ];
+ 		
+		/*
+		 *    |x0|x1|x2|x3|x4|
+		 * ---+--+--+--+--+--+
+		 * y0 |  | 0| 1| 2|  |
+		 * y1 | 3| 4| 5| 6| 7|
+		 * y2 | 8| 9|10|11|12|
+		 * y3 |13|14|15|16|17|
+		 * y4 |  |18|19|20|  |
+		 */
+		
+		var x0 = (x - 2 >= 0) ? x - 2 : 0;
+		var x1 = (x - 1 >= 0) ? x - 1 : 0;
+		var x2 = x;
+		var x3 = (x + 1 < sourceWidth) ? x + 1 : sourceWidth - 1;
+		var x4 = (x + 2 < sourceWidth) ? x + 2 : sourceWidth - 1;
+		
+		var y0 = (y - 2 >= 0) ? y - 2 : 0;
+		var y1 = (y - 1 >= 0) ? y - 1 : 0;
+		var y2 = y;
+		var y3 = (y + 1 < sourceHeight) ? y + 1 : sourceHeight - 1;
+		var y4 = (y + 2 < sourceHeight) ? y + 2 : sourceHeight - 1;
+		
+		m[ 0] = o[y0 * sourceWidth + x1];
+		m[ 1] = o[y0 * sourceWidth + x2];
+		m[ 2] = o[y0 * sourceWidth + x3];
 
-		m[ 3] = o[ abs( (w * (y-1) ) + (x-2) ) * (  ((x-2>>31) | 0x00000001)|((y-1>>31) | 0x00000001)  ) ];
-		m[ 4] = o[ abs( (w * (y-1) ) + (x-1) ) * (  ((x-1>>31) | 0x00000001)|((y-1>>31) | 0x00000001)  ) ];
-		m[ 5] = o[ abs( (w * (y-1) ) + ( x ) ) * (  ((  x>>31) | 0x00000001)|((y-1>>31) | 0x00000001)  ) ];
-		m[ 6] = o[ abs( (w * (y-1) ) + (x+1) ) * (  ((x+1>>31) | 0x00000001)|((y-1>>31) | 0x00000001)  ) ];
-		m[ 7] = o[ abs( (w * (y-1) ) + (x+2) ) * (  ((x+2>>31) | 0x00000001)|((y-1>>31) | 0x00000001)  ) ];
+		m[ 3] = o[y1 * sourceWidth + x0];
+		m[ 4] = o[y1 * sourceWidth + x1];
+		m[ 5] = o[y1 * sourceWidth + x2];
+		m[ 6] = o[y1 * sourceWidth + x3];
+		m[ 7] = o[y1 * sourceWidth + x4];
 
-		m[ 8] = o[ abs( (w * ( y ) ) + (x-2) ) * (  ((x-2>>31) | 0x00000001)|((  y>>31) | 0x00000001)  ) ];
-		m[ 9] = o[ abs( (w * ( y ) ) + (x-1) ) * (  ((x-1>>31) | 0x00000001)|((  y>>31) | 0x00000001)  ) ];
-		m[10] = o[ abs( (w * ( y ) ) + ( x ) ) * (  ((  x>>31) | 0x00000001)|((  y>>31) | 0x00000001)  ) ];
-		m[11] = o[ abs( (w * ( y ) ) + (x+1) ) * (  ((x+1>>31) | 0x00000001)|((  y>>31) | 0x00000001)  ) ];
-		m[12] = o[ abs( (w * ( y ) ) + (x+2) ) * (  ((x+2>>31) | 0x00000001)|((  y>>31) | 0x00000001)  ) ];
+		m[ 8] = o[y2 * sourceWidth + x0];
+		m[ 9] = o[y2 * sourceWidth + x1];
+		m[10] = o[y2 * sourceWidth + x2];
+		m[11] = o[y2 * sourceWidth + x3];
+		m[12] = o[y2 * sourceWidth + x4];
 
-		m[13] = o[ abs( (w * (y+1) ) + (x-2) ) * (  ((x-2>>31) | 0x00000001)|((y+1>>31) | 0x00000001)  ) ];
-		m[14] = o[ abs( (w * (y+1) ) + (x-1) ) * (  ((x-1>>31) | 0x00000001)|((y+1>>31) | 0x00000001)  ) ];
-		m[15] = o[ abs( (w * (y+1) ) + ( x ) ) * (  ((  x>>31) | 0x00000001)|((y+1>>31) | 0x00000001)  ) ];
-		m[16] = o[ abs( (w * (y+1) ) + (x+1) ) * (  ((x+1>>31) | 0x00000001)|((y+1>>31) | 0x00000001)  ) ];
-		m[17] = o[ abs( (w * (y+1) ) + (x+2) ) * (  ((x+2>>31) | 0x00000001)|((y+1>>31) | 0x00000001)  ) ];
+		m[13] = o[y3 * sourceWidth + x0];
+		m[14] = o[y3 * sourceWidth + x1];
+		m[15] = o[y3 * sourceWidth + x2];
+		m[16] = o[y3 * sourceWidth + x3];
+		m[17] = o[y3 * sourceWidth + x4];
 
-		m[18] = o[ abs( (w * (y+2) ) + (x-1) ) * (  ((x-1>>31) | 0x00000001)|((y+2>>31) | 0x00000001)  ) ];
-		m[19] = o[ abs( (w * (y+2) ) + ( x ) ) * (  ((  x>>31) | 0x00000001)|((y+2>>31) | 0x00000001)  ) ];
-		m[20] = o[ abs( (w * (y+2) ) + (x+1) ) * (  ((x+1>>31) | 0x00000001)|((y+2>>31) | 0x00000001)  ) ];
-		/* Matrix: (10 is 0,0 i.e: current pixel)
-				-2 | -1|  0| +1| +2 	(x)
-		______________________________
-		-2 |		[ 0][ 1][ 2]
-		-1 |	[ 3][ 4][ 5][ 6][ 7]
-		 0 |	[ 8][ 9][10][11][12]
-		+1 |	[13][14][15][16][17]
-		+2 |		[18][19][20]
-		   |
-		(y)|
-		*/
+		m[18] = o[y4 * sourceWidth + x1];
+		m[19] = o[y4 * sourceWidth + x2];
+		m[20] = o[y4 * sourceWidth + x3];
  	}
  
 
